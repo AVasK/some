@@ -3,12 +3,13 @@
 
 #pragma once
 
-#include <iostream>
-#include <utility> // forward, move, exchange
-#include <type_traits>
-#include <cstring> //memcpy
-#include <cstdint> //ints
 #include <concepts>
+#include <cstdint> //ints
+#include <cstring> //memcpy
+#include <iostream>
+#include <memory> // unique_ptr
+#include <type_traits>
+#include <utility> // forward, move, exchange
 
 // ===== [ MACROS ] =====
 #if defined __GNUC__ // GCC, Clang
