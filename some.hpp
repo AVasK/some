@@ -1172,5 +1172,8 @@ poly(vx::impl<Trait,T> const*) -> poly<vx::impl<Trait,T> const*>;
 
 } // namespace vx
 
+
+#undef VX_FSOME_ELIDE_VCALL_ON_MOVE
+#undef VX_HARDENED
 #undef VX_SOME_LOG
 #undef VX_UNREACHABLE
