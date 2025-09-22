@@ -461,7 +461,7 @@ struct multitrait_support_for<CRTP, vx::mix<Traits...>> {
 };
 
 
-struct empty_some_ptr_access : std::runtime_error {
+struct empty_some_access : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
@@ -571,14 +571,14 @@ public:
     /// with its lifetime already started through other means"
     std::add_pointer_t<const raw_trait_t> trait_ptr() const noexcept(not checked) {
         if constexpr (checked) {
-            if (empty()) throw empty_some_ptr_access{"empty some_ptr accessed"};
+            if (empty()) { throw empty_some_access{"empty some_ptr accessed"}; }
         }
         return std::launder(reinterpret_cast<std::add_pointer_t<const raw_trait_t>>(&iface)); 
     }
 
     std::add_pointer_t<Trait> trait_ptr() noexcept(not checked) {
         if constexpr (checked) {
-            if (empty()) throw empty_some_ptr_access{"empty some_ptr accessed"};
+            if (empty()) { throw empty_some_access{"empty some_ptr accessed"}; }
         }
         return std::launder(reinterpret_cast<std::add_pointer_t<Trait>>(&iface));
     }
@@ -847,8 +847,18 @@ protected:
     friend struct basic_operations_for<some<Trait, config>, Trait>;
     friend struct multitrait_support_for<some<Trait, config>, Trait>;
 
-    const auto* trait_ptr() const { return storage.p_trait; }
-    auto* trait_ptr() { return storage.p_trait; }
+    const auto* trait_ptr() const noexcept(not config.check_empty) {
+        if constexpr (config.check_empty) {
+            if (storage.p_trait == nullptr) { throw empty_some_access{"empty some<> accessed"}; }
+        } 
+        return storage.p_trait; 
+    }
+    auto* trait_ptr() noexcept(not config.check_empty) { 
+        if constexpr (config.check_empty) {
+            if (storage.p_trait == nullptr) { throw empty_some_access{"empty some<> accessed"}; }
+        }
+        return storage.p_trait; 
+    }
         
 private:
     storage_for<Trait, config.sbo.size, config.sbo.alignment> storage;
