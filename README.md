@@ -8,8 +8,10 @@ Or if we were to stay in the C++ land, it's somewhat similar to [Dyno](https://g
 Here is a very simple example of how you can use some<> even without Traits (about them in a second)
 ```C++
 // without a trait, some can be used as std::any, but with a bunch of extra tricks up its sleeve (configurable SBO, configurable copy and move, ...)
-some<> anything = 1;
+vx::some<> anything = 1;
 std::cout << *anything.try_get<int>();
+anything = std::string{"hi"};
+std::cout << *anything.try_get<std::string>();
 ```
 Here is another simple example of how you would use it:
 Let's say we have a simple struct Square that has a method  `void draw(std::ostream&)`:
