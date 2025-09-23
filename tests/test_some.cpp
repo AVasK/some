@@ -25,7 +25,7 @@ struct Object {
     // { std::cerr << "Object(Object const&)\n"; }
     // ~Object() { std::cerr << "~Object\n"; }
 
-    int number() const noexcept { return 42; }
+    int number() const noexcept { return x; } // return 42; }
     void test() const noexcept { assert(( arr[99] == x )); }
     int mut() { 
         return x++; 
@@ -134,9 +134,9 @@ struct VTestInterface {
 };
 
 struct VObject : VTestInterface {
-    int x = 0;
-    std::array<int, 100> arr;
-    virtual void test() const noexcept override { assert(( arr[99] == x )); }
+    int x = 42;
+    std::array<int, 100> arr {};
+    virtual void test() const noexcept override { assert(( arr[99] == 0 )); }
 
     virtual int number() const noexcept override { return 42; }
     virtual int mut() override { return x++; }
@@ -152,8 +152,8 @@ void read(VTestInterface const& c) {
 
 void read(VTestInterface& c) {
     assert(( c.number() == 42 ));
-    assert(( c.mut() == 0 )); // OK: non-const ref
-    assert(( c.mut() == 1 ));
+    assert(( c.mut() == 42 )); // OK: non-const ref
+    assert(( c.mut() == 43 ));
 }
 
 void read(vx::some<TestInterface const&> c) {
@@ -210,8 +210,8 @@ int main() {
 
     // Some<> poly
     {
-        const Object c{};
-        Object v{};
+        const Object c{42};
+        Object v{42};
 
         read(c); // takes a const 
         read(v); // takes a non-const
@@ -235,6 +235,7 @@ int main() {
         assert(( fs->number() == v.number() ));
 
         vx::some_ptr<TestInterface> sp = &v;
+        sp = &v2;
         // sp->mut(); // OK
         vx::some_ptr<const TestInterface> spcv = &v; 
         // spcv->mut(); // ERROR
@@ -263,12 +264,10 @@ int main() {
         static_assert(not std::is_constructible_v< vx::poly_view<TestInterface>, const Object& >);
 
         const vx::some_ptr<TestInterface> csp = &v;
-        assert(( sp->number() == sr2->number() ));
+        assert(( sp->number() == v2.number() ));
+        assert(( sp->number() != sr2->number() ));
         assert(( csp->number() == sr2->number() ));
-        // sp = &c;
-        // assert(( sp->number() == sr->number() ));
-
-        // vx::some<TestInterface &> sr3 = Object{}; // DOESN'T EXTEND THE LIFETIME, SHOULD BE FORBIDDEN!
+        // vx::some<TestInterface &> sr3 = Object{}; // DOESN'T GET ITS LIFETIME EXTENDED, THUS FORBIDDEN!
     }
 
     // Mixing multiple traits:
@@ -329,6 +328,9 @@ int main() {
         // static_assert( sizeof(vx::some<>) == sizeof(void*)+ vx::cfg::some{}.sbo.size );
         vx::some<> y3 {}; // Copy 3
         y3 = y2;
+        y3 = Verbose{};
+        Verbose v{};
+        y3 = v;
         vx::some<> z {std::move(x)}; // Version 0
         assert(y.try_get<Verbose>()->number == z.try_get<Verbose>()->number);
         vx::some<> z2 {};
@@ -379,6 +381,9 @@ int main() {
         assert(y.try_get<Verbose>()->number == z.try_get<Verbose>()->number);
         vx::fsome<> z2 {};
         z2 = z;
+        z2 = Verbose{};
+        Verbose v{};
+        z2 = v;
         z2 = std::move(z);
         assert(y.try_get<Verbose>()->number == y2.try_get<Verbose>()->number);
         // assert(y.try_get<Verbose>()->number == y3.try_get<Verbose>()->number);
