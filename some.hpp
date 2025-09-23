@@ -46,12 +46,12 @@ using u8 = std::uint8_t;
 namespace cfg {
 /// ===== [ SBO storage configuration ] ======
 struct SBO {
-    vx::u16 size { 24 };
+    vx::u16 size;
     vx::u16 alignment { alignof(std::max_align_t) };
 };
 
 struct some {
-    SBO sbo {};
+    SBO sbo {24};
     bool copy {true}; 
     bool move {true};
     bool empty_state {true};
@@ -501,7 +501,7 @@ public:
 
     template <typename T, typename Del>
     requires( std::is_const_v<Trait> || not std::is_const_v<T> )
-    some_ptr(std::unique_ptr<T,Del> p) {
+    some_ptr(std::unique_ptr<T, Del> p) {
         set(p.get());
         p.release();
     }
@@ -511,6 +511,23 @@ public:
     }
 
     some_ptr(std::nullptr_t) : some_ptr{} {}
+
+    template <typename T>
+    requires( std::is_const_v<Trait> || not std::is_const_v<T> )
+    some_ptr& operator= (T * p) {
+        clear(); /// ??? Or disallow the impl<Trait, T*> to have non-trivial dtors?
+        set(p);
+        return *this;
+    }
+
+    template <typename T, typename Del>
+    requires( std::is_const_v<Trait> || not std::is_const_v<T> )
+    some_ptr& operator= (std::unique_ptr<T, Del> p) {
+        clear(); /// ??? Or disallow the impl<Trait, T*> to have non-trivial dtors?
+        set(p.get());
+        p.release();
+        return *this;
+    }
 
     //!@TODO: Add assignment and copy-ctor to enable changing the pointer, as it should.
     // some_ptr(some_ptr const& other);
@@ -830,6 +847,17 @@ struct some : basic_operations_for<some<Trait, config>, Trait>,
         other.storage.copy_into(this->storage);
         return *this;
     }
+
+    ///@brief: overload for a more efficient copy- and move- assignment from a non-polymorphic object
+    template <typename T> requires (not polymorphic<T>)
+    some& operator= (T && obj) requires ((not config.copy || std::is_copy_constructible_v<std::remove_cvref_t<T>>)
+                                        &&
+                                        (not config.move || std::is_move_constructible_v<std::remove_cvref_t<T>>)) {
+        storage.clear();
+        storage.set(std::forward<T>(obj));
+        return *this;
+    }
+
     
     template <cfg::some config2>
     some(some<Trait, config2> && other) noexcept {
@@ -1004,6 +1032,16 @@ struct fsome : public fsome_storage_policy<config.sbo.size, config.sbo.alignment
         }
         clear();
         other.copy_into(*this);
+        return *this;
+    }
+
+    ///@brief: overload for a more efficient copy- and move- assignment from a non-polymorphic object
+    template <typename T> requires (not polymorphic<T>)
+    fsome& operator= (T && obj) requires ((not config.copy || std::is_copy_constructible_v<std::remove_cvref_t<T>>)
+                                         &&
+                                         (not config.move || std::is_move_constructible_v<std::remove_cvref_t<T>>)) {
+        clear();
+        poly_ = this->make(std::forward<T>(obj));
         return *this;
     }
     
