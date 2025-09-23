@@ -331,6 +331,7 @@ int main() {
         y3 = Verbose{};
         Verbose v{};
         y3 = v;
+        y3 = std::move(v);
         vx::some<> z {std::move(x)}; // Version 0
         assert(y.try_get<Verbose>()->number == z.try_get<Verbose>()->number);
         vx::some<> z2 {};
@@ -384,6 +385,7 @@ int main() {
         z2 = Verbose{};
         Verbose v{};
         z2 = v;
+        z2 = std::move(v);
         z2 = std::move(z);
         assert(y.try_get<Verbose>()->number == y2.try_get<Verbose>()->number);
         // assert(y.try_get<Verbose>()->number == y3.try_get<Verbose>()->number);
