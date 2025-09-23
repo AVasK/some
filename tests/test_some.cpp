@@ -485,5 +485,59 @@ int main() {
 
         static_assert(std::is_constructible_v< vx::fsome<vx::trait, vx::cfg::fsome{.copy=false, .move=false}>, inplace>);   
     }
+
+    /// Test casts:
+    {
+        const auto test_casts = [](auto &o, const auto& co) {
+            static_assert(std::same_as< decltype(o.template try_get<int>()), int * >);
+            static_assert(std::same_as< decltype(co.template try_get<int>()), const int * >);
+            static_assert(std::same_as< decltype(co.template try_get<const int>()), const int * >);
+            assert(*o.template try_get<int>() == 1); // -> int *
+            assert(*co.template try_get<int>() == 1); // -> const int *
+            assert(*co.template try_get<const int>() == 1); // -> const int *
+            *o.template try_get<int>() = 2;
+            // *co.try_get<int>() = 2; // ERROR
+
+            // same for some_cast:
+            static_assert(std::same_as< decltype(vx::some_cast<int>(&o)), int * >);
+            static_assert(std::same_as< decltype(vx::some_cast<int>(&co)), const int * >);
+            static_assert(std::same_as< decltype(vx::some_cast<const int>(&co)), const int * >);
+
+            static_assert(std::same_as< decltype(vx::some_cast<int*>(o)), int * >);
+            static_assert(std::same_as< decltype(vx::some_cast<int*>(co)), const int * >);
+            static_assert(std::same_as< decltype(vx::some_cast<const int*>(co)), const int * >);
+
+            static_assert(std::same_as< decltype(vx::some_cast<int>(o)), int>);
+            static_assert(std::same_as< decltype(vx::some_cast<int>(co)), int>);
+            static_assert(std::same_as< decltype(vx::some_cast<int&>(o)), int&>);
+            static_assert(std::same_as< decltype(vx::some_cast<const int&>(co)), const int&>);
+
+            static_assert(std::same_as< decltype(vx::some_cast<int>(std::move(o))), int>);
+            static_assert(std::same_as< decltype(vx::some_cast<int>(std::move(co))), int>);
+        };
+
+        vx::some<> s = 1;
+        const vx::some<> cs = 1;
+        test_casts(s, cs);
+
+        vx::fsome<> f = 1;
+        const vx::fsome<> cf = 1;
+        test_casts(f, cf);
+
+        int i = 1;
+        const int ci = 1;
+        vx::some<vx::trait&> v = i;
+        vx::some<vx::trait const&> cv = ci;
+        test_casts(v, cv);
+    }
+
+    /// Test casts from examples
+    {
+        vx::some<> anything = 1;
+        std::cout << *anything.try_get<int>();
+        std::cout << vx::some_cast<int>(anything);
+        anything = std::string{"hi"};
+        std::cout << *anything.try_get<std::string>();
+    }
     
 }
