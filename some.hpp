@@ -401,6 +401,13 @@ struct basic_operations_for {
         return impl ? &impl->self() : nullptr;
     }
 
+    template <typename Target>
+    const Target* try_get() const noexcept {
+        using X = std::remove_const_t<Target>; // for fsome, poly_view and some_ptr that store const-less type
+        auto * impl = dynamic_cast<CRTP::template impl_type<X> const*>(iface());
+        return impl ? &impl->self() : nullptr;
+    }
+
     template <typename Index>
     decltype(auto) operator[] (Index&& index) requires requires(Trait & t){ t[std::forward<Index>(index)]; }
     {
@@ -1207,6 +1214,50 @@ struct poly< vx::impl<Trait, T> const* > {
 
 template <typename Trait, typename T>
 poly(vx::impl<Trait,T> const*) -> poly<vx::impl<Trait,T> const*>;
+
+
+struct bad_some_cast : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+template <typename T, vx::polymorphic Object>
+requires (
+    not std::is_pointer_v<T>
+    && 
+    (not std::is_reference_v<T> 
+        || (std::is_const_v<std::remove_reference_t<Object>> == std::is_const_v<std::remove_reference_t<T>>))
+    && 
+    not (std::is_rvalue_reference_v<Object&&> && std::is_reference_v<T>)
+)
+T some_cast (Object && obj) {
+    using U = std::remove_cvref_t<T>;
+    if (auto p = obj.template try_get<U>(); p != nullptr) {
+        return *p;
+    } else {
+        throw bad_some_cast{"some<> contains a different object"};
+    }
+}
+
+template <typename T, vx::polymorphic Object>
+requires (std::is_pointer_v<T> && not rvalue<Object>)
+auto* some_cast (Object&& obj) {
+    return some_cast<std::remove_pointer_t<T>>(&obj);
+}
+
+
+template <typename T>
+requires (not std::is_pointer_v<T>)
+T* some_cast (vx::polymorphic auto* obj) noexcept {
+    return obj->template try_get<T>();
+}
+
+template <typename T>
+requires (not std::is_pointer_v<T>)
+const T* some_cast (const vx::polymorphic auto * obj) noexcept {
+    return obj->template try_get<T>();
+}
+
+
 
 } // namespace vx
 
