@@ -294,6 +294,45 @@ Here's an approximate layout of `some` and `fsome`.
 
 #### fsome can also have SBO, but I'm too lazy to draw that :)
 
+
+### Config
+```C++
+namespace cfg {
+/// ===== [ SBO storage configuration ] ======
+struct SBO {
+    vx::u16 size;
+    vx::u16 alignment { alignof(std::max_align_t) };
+};
+
+struct some {
+    SBO sbo {24};
+    bool copy {true}; 
+    bool move {true};
+    bool empty_state {true};
+    bool check_empty {VX_HARDENED};
+};
+
+struct fsome {
+    SBO sbo {0};
+    bool copy {true}; 
+    bool move {true};
+    bool empty_state {true};
+    bool check_empty {VX_HARDENED};
+};
+}// namespace cfg
+```
+
+As such, having a sufficiently new compiler you can do this:
+```C++
+vx::some<Trait, {.sbo{32}, .copy{false}}> s {};
+vx::fsome<Trait, {.sbo{32}, .copy{false}}> f {};
+```
+or, with an older compiler
+```C++
+vx::some<Trait, vx::cfg::some{.sbo{32}, .copy{false}}> s {};
+vx::fsome<Trait, vx::cfg::fsome{.sbo{32}, .copy{false}}> f {};
+```
+
 ### Examples (will be added shortly)
 
 
