@@ -504,12 +504,14 @@ int main() {
             static_assert(std::same_as< decltype(vx::some_cast<const int>(&co)), const int * >);
 
             static_assert(std::same_as< decltype(vx::some_cast<int*>(o)), int * >);
+            static_assert(std::same_as< decltype(vx::some_cast<const int*>(o)), const int *>);
             static_assert(std::same_as< decltype(vx::some_cast<int*>(co)), const int * >);
             static_assert(std::same_as< decltype(vx::some_cast<const int*>(co)), const int * >);
 
             static_assert(std::same_as< decltype(vx::some_cast<int>(o)), int>);
             static_assert(std::same_as< decltype(vx::some_cast<int>(co)), int>);
             static_assert(std::same_as< decltype(vx::some_cast<int&>(o)), int&>);
+            static_assert(std::same_as< decltype(vx::some_cast<const int&>(o)), const int&>);
             static_assert(std::same_as< decltype(vx::some_cast<const int&>(co)), const int&>);
 
             static_assert(std::same_as< decltype(vx::some_cast<int>(std::move(o))), int>);
@@ -534,10 +536,21 @@ int main() {
     /// Test casts from examples
     {
         vx::some<> anything = 1;
-        std::cout << *anything.try_get<int>();
-        std::cout << vx::some_cast<int>(anything);
+        assert(( *anything.try_get<int>() == 1 ));
+        assert(( vx::some_cast<int>(anything) == 1 ));
+        vx::some_cast<int&>(anything) = 7;
+        assert(( vx::some_cast<int>(anything) == 7 ));
         anything = std::string{"hi"};
-        std::cout << *anything.try_get<std::string>();
+        std::cout << vx::some_cast<std::string const&>(anything);
+    }
+    {
+        vx::fsome<> anything = 1;
+        assert(( *anything.try_get<int>() == 1 ));
+        assert(( vx::some_cast<int>(anything) == 1 ));
+        vx::some_cast<int&>(anything) = 7;
+        assert(( vx::some_cast<int>(anything) == 7 ));
+        anything = std::string{"hi"};
+        std::cout << vx::some_cast<std::string const&>(anything);
     }
     
 }

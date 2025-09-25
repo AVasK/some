@@ -1225,7 +1225,8 @@ requires (
     not std::is_pointer_v<T>
     && 
     (not std::is_reference_v<T> 
-        || (std::is_const_v<std::remove_reference_t<Object>> == std::is_const_v<std::remove_reference_t<T>>))
+        /// const-qualification of the Object is less-or-equal to the const-qualification of the reference T
+        || (std::is_const_v<std::remove_reference_t<Object>> <= std::is_const_v<std::remove_reference_t<T>>))
     && 
     not (std::is_rvalue_reference_v<Object&&> && std::is_reference_v<T>)
 )
