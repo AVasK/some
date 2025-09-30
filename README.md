@@ -28,6 +28,23 @@ and also [let's inspect the assembly output](https://godbolt.org/#g:!((g:!((g:!(
 </details>
 
 
+### Quick `shapes` example
+To define a polymorphic interface that has `.draw(ostream) -> void` and `.area() -> float` here's all you have to do: 
+```C++
+struct Shape : vx::trait {
+    virtual void draw(std::ostream&) const = 0;
+    virtual float area() const;
+};
+
+template <typename T>
+struct vx::impl<Shape, T> final : impl_for<Shape, T> {
+    using impl_for<Shape, T>::impl_for;
+    void draw(std::ostream& out) const override { vx::poly {this}->draw(out); }
+    float area() const override { return vx::poly {this}->area(); }
+};
+```
+See below for explanation and more examples
+
 ### Getting started
 
 Here is a very simple example of how you can use some<> even without Traits (about them in a second)
